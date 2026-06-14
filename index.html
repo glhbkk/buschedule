@@ -522,7 +522,7 @@ setRtTab(autoRtTab());
 updateClock();
 fetchRealtime();
 setInterval(()=>{ updateClock(); update702HomeCard(); sortCards(); render(); }, 30000);
-setInterval(fetchRealtime, 60000);
+setInterval(fetchRealtime, 300000); // 5분마다 실시간 갱신
 </script>
 </body>
 </html>
