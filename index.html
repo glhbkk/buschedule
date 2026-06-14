@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f0f0f">
+<title>내 대중교통 시간표</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0f0f0f; --surface: #1a1a1a; --surface2: #242424;
+    --border: rgba(255,255,255,0.08); --text: #f0f0f0;
+    --text-muted: #888; --text-dim: #555;
+    --accent-blue: #4a9eff; --accent-blue-bg: rgba(74,158,255,0.12);
+    --accent-orange: #ff8c42; --accent-orange-bg: rgba(255,140,66,0.12);
+    --accent-green: #4caf82; --accent-green-bg: rgba(76,175,130,0.12);
+    --accent-purple: #a78bfa; --accent-purple-bg: rgba(167,139,250,0.12);
+    --accent-red: #ff5c5c; --accent-red-bg: rgba(255,92,92,0.12);
+    --radius: 14px; --radius-sm: 8px;
+  }
+  body { font-family: 'Noto Sans KR', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 0 0 80px; }
+
+  .header { padding: 24px 20px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: rgba(15,15,15,0.92); backdrop-filter: blur(12px); z-index: 10; }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .route-badges { display: flex; gap: 6px; }
+  .route-badge { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 20px; }
+  .badge-bus { color: var(--accent-blue); background: var(--accent-blue-bg); }
+  .badge-rail { color: var(--accent-purple); background: var(--accent-purple-bg); }
+  .current-time { font-size: 13px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .header h1 { font-size: 22px; font-weight: 700; color: var(--text); }
+
+  .day-toggle { display: flex; gap: 6px; padding: 16px 20px 0; }
+  .day-btn { flex: 1; padding: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-muted); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .day-btn.active { background: var(--accent-blue-bg); border-color: var(--accent-blue); color: var(--accent-blue); }
+
+  /* 실시간 카드 */
+  .realtime-wrap { padding: 16px 20px 0; }
+  .realtime-title { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; letter-spacing: 0.05em; }
+  .realtime-cards { display: flex; flex-direction: column; gap: 8px; }
+  .rt-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .rt-card.loading { opacity: 0.5; }
+  .rt-left { display: flex; flex-direction: column; gap: 3px; }
+  .rt-stop { font-size: 13px; font-weight: 700; color: var(--text); }
+  .rt-route { font-size: 11px; color: var(--text-muted); }
+  .rt-right { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
+  .rt-arrive { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .rt-arrive.soon { color: var(--accent-orange); }
+  .rt-arrive.ok { color: var(--accent-blue); }
+  .rt-arrive.far { color: var(--text-muted); }
+  .rt-arrive.none { color: var(--text-dim); font-size: 13px; }
+  .rt-next { font-size: 11px; color: var(--text-dim); }
+  .rt-refresh { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .refresh-btn { background: none; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; padding: 4px; line-height: 1; }
+  .refresh-btn:active { transform: rotate(180deg); transition: transform 0.3s; }
+
+  .next-banner { margin: 12px 20px 0; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .next-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .next-info { display: flex; align-items: baseline; gap: 6px; }
+  .next-min { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .next-min.soon { color: var(--accent-orange); }
+  .next-min.ok { color: var(--accent-blue); }
+  .next-min-unit { font-size: 14px; color: var(--text-muted); }
+  .next-time-detail { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .next-station { font-size: 12px; color: var(--text-muted); text-align: right; }
+
+  .tab-bar { display: flex; padding: 16px 20px 0; border-bottom: 1px solid var(--border); }
+  .tab-btn { flex: 1; padding: 10px 8px; border: none; border-bottom: 2px solid transparent; background: transparent; color: var(--text-muted); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .tab-btn.active { color: var(--text); border-bottom-color: var(--accent-blue); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .section { padding: 20px 20px 0; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .section-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-blue { background: var(--accent-blue); }
+  .dot-orange { background: var(--accent-orange); }
+  .dot-green { background: var(--accent-green); }
+  .dot-purple { background: var(--accent-purple); }
+  .section-title { font-size: 15px; font-weight: 700; }
+  .section-sub { font-size: 12px; color: var(--text-muted); margin-left: auto; }
+
+  .time-row { display: flex; align-items: flex-start; gap: 14px; padding: 12px 0; border-top: 1px solid var(--border); }
+  .hour { font-size: 20px; font-weight: 700; min-width: 32px; color: var(--text); font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .hour-label { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .pill { font-size: 13px; font-variant-numeric: tabular-nums; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); cursor: default; }
+  .pill.passed { opacity: 0.28; }
+  .pill.next-blue   { background: var(--accent-blue-bg);   border-color: var(--accent-blue);   color: var(--accent-blue);   font-weight: 700; }
+  .pill.next-orange { background: var(--accent-orange-bg); border-color: var(--accent-orange); color: var(--accent-orange); font-weight: 700; }
+  .pill.next-green  { background: var(--accent-green-bg);  border-color: var(--accent-green);  color: var(--accent-green);  font-weight: 700; }
+  .pill.next-purple { background: var(--accent-purple-bg); border-color: var(--accent-purple); color: var(--accent-purple); font-weight: 700; }
+
+  .divider { margin: 8px 20px 0; border: none; border-top: 1px solid var(--border); }
+  .note { margin: 20px; font-size: 11px; color: var(--text-dim); text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="route-badges">
+      <span class="route-badge badge-bus">701·702 버스</span>
+      <span class="route-badge badge-rail">공항철도</span>
+    </div>
+    <span class="current-time" id="clock">--:--:--</span>
+  </div>
+  <h1>내 대중교통 시간표</h1>
+</div>
+
+<div class="day-toggle">
+  <button class="day-btn" id="btn-weekday" onclick="setDay('weekday')">평일</button>
+  <button class="day-btn" id="btn-weekend" onclick="setDay('weekend')">토·공휴일</button>
+</div>
+
+<!-- 실시간 도착정보 -->
+<div class="realtime-wrap">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+    <span class="realtime-title">🔴 실시간 버스 도착정보</span>
+    <button class="refresh-btn" onclick="fetchRealtime()" title="새로고침">↻</button>
+  </div>
+  <div class="realtime-cards">
+    <div class="rt-card loading" id="rt-card-commute">
+      <div class="rt-left">
+        <span class="rt-stop">청라초등학교</span>
+        <span class="rt-route">702번 (출근)</span>
+      </div>
+      <div class="rt-right">
+        <span class="rt-arrive ok" id="rt-arrive-commute">불러오는 중...</span>
+        <span class="rt-next" id="rt-next-commute"></span>
+      </div>
+    </div>
+    <div class="rt-card loading" id="rt-card-home">
+      <div class="rt-left">
+        <span class="rt-stop">청라국제도시역</span>
+        <span class="rt-route">702번 (퇴근)</span>
+      </div>
+      <div class="rt-right">
+        <span class="rt-arrive ok" id="rt-arrive-home">불러오는 중...</span>
+        <span class="rt-next" id="rt-next-home"></span>
+      </div>
+    </div>
+    <div class="rt-card loading" id="rt-card-21">
+      <div class="rt-left">
+        <span class="rt-stop">청라국제도시역(서부산단)</span>
+        <span class="rt-route">2-1번</span>
+      </div>
+      <div class="rt-right">
+        <span class="rt-arrive ok" id="rt-arrive-21">불러오는 중...</span>
+        <span class="rt-next" id="rt-next-21"></span>
+      </div>
+    </div>
+    <div class="rt-card loading" id="rt-card-43">
+      <div class="rt-left">
+        <span class="rt-stop">청라국제도시역(청라국제교)</span>
+        <span class="rt-route">43번</span>
+      </div>
+      <div class="rt-right">
+        <span class="rt-arrive ok" id="rt-arrive-43">불러오는 중...</span>
+        <span class="rt-next" id="rt-next-43"></span>
+      </div>
+    </div>
+  </div>
+  <div class="rt-refresh" id="rt-updated"></div>
+</div>
+
+
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="setTab('rail')">🚆 공항철도</button>
+  <button class="tab-btn" onclick="setTab('bus')">🚌 버스</button>
+</div>
+
+<!-- 공항철도 탭 -->
+<div class="tab-panel active" id="tab-rail">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot dot-purple"></div>
+      <span class="section-title">청라국제도시역 출발 <span style="font-size:12px;color:var(--accent-purple);font-weight:400;">(출근)</span></span>
+      <span class="section-sub">→ 인천공항T2</span>
+    </div>
+    <div id="arex-morning"></div>
+    <div id="arex-evening"></div>
+  </div>
+  <hr class="divider">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot dot-purple"></div>
+      <span class="section-title">인천공항T2 출발 <span style="font-size:12px;color:var(--accent-purple);font-weight:400;">(퇴근)</span></span>
+      <span class="section-sub">→ 청라국제도시역 · 9·18시</span>
+    </div>
+    <div id="arex-t2"></div>
+  </div>
+</div>
+
+<!-- 버스 탭 -->
+<div class="tab-panel" id="tab-bus">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot dot-orange"></div>
+      <span class="section-title">청라역 출발 <span style="font-size:12px;color:var(--accent-orange);font-weight:400;">(퇴근)</span></span>
+      <span class="section-sub">저녁 18·19시</span>
+    </div>
+    <div id="chungna-morning"></div>
+    <div id="chungna-evening"></div>
+  </div>
+  <hr class="divider">
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot dot-green"></div>
+      <span class="section-title">가정역 출발 <span style="font-size:12px;color:var(--accent-green);font-weight:400;">(출근)</span></span>
+      <span class="section-sub">아침 7시</span>
+    </div>
+    <div id="gajeong-morning"></div>
+  </div>
+</div>
+
+<p class="note">도로·운행 사정에 따라 시각은 변경될 수 있습니다</p>
+
+<script>
+// ── 설정 ──────────────────────────────────────────────
+const API_KEY = '1ea48ee73f646fa9592a9e40e24ab4238c860c7cabbd9f831b72075dce4a188a';
+const STOPS = {
+  commute: { id: '89282', name: '청라초등학교', cardId: 'rt-card-commute', arriveId: 'rt-arrive-commute', nextId: 'rt-next-commute', route: '702' },
+  home:    { id: '89270', name: '청라국제도시역', cardId: 'rt-card-home',    arriveId: 'rt-arrive-home',    nextId: 'rt-next-home', route: '702' },
+  bus21:   { id: '89043', name: '청라국제도시역(서부산단)', cardId: 'rt-card-21', arriveId: 'rt-arrive-21', nextId: 'rt-next-21', route: '2-1' },
+  bus43:   { id: '89215', name: '청라국제도시역(청라국제교)', cardId: 'rt-card-43', arriveId: 'rt-arrive-43', nextId: 'rt-next-43', route: '43' }
+};
+
+// ── 시간표 데이터 ──────────────────────────────────────
+const schedule = {
+  bus: {
+    chungna: {
+      morning: { weekday: { 9:[39,54] }, weekend: { 9:[47], 10:[3,23] } },
+      evening: { weekday: { 18:[39,47,57] }, weekend: { 18:[46,58] } }
+    },
+    gajeong: {
+      morning: { weekday: { 7:[10,20,28,36] }, weekend: { 7:[20,39] } }
+    }
+  },
+  arex: {
+    morning: {
+      weekday: { 7:[45,57], 8:[7,17] },
+      weekend: { 7:[36,42,50,57], 8:[2,7,13,18] }
+    },
+    evening: {
+      weekday: { 16:[47,53,59], 17:[9,16] },
+      weekend: { 16:[47,53,58], 17:[5,11,21] }
+    },
+    t2departure: {
+      weekday: { 9:[3,11], 18:[3,7,10] },
+      weekend: { 9:[3,10,17], 18:[7,10,15] }
+    }
+  }
+};
+
+let currentDay = 'weekday';
+let currentTab = 'rail';
+
+function setDay(day) {
+  currentDay = day;
+  document.getElementById('btn-weekday').classList.toggle('active', day==='weekday');
+  document.getElementById('btn-weekend').classList.toggle('active', day==='weekend');
+  render();
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>{
+    b.classList.toggle('active', ['rail','bus'][i]===tab);
+  });
+  document.getElementById('tab-rail').classList.toggle('active', tab==='rail');
+  document.getElementById('tab-bus').classList.toggle('active', tab==='bus');
+  render();
+}
+
+function autoDay() {
+  const d = new Date().getDay();
+  return (d===0||d===6) ? 'weekend' : 'weekday';
+}
+
+// ── 실시간 API ─────────────────────────────────────────
+async function fetchRealtime() {
+  document.getElementById('rt-updated').textContent = '불러오는 중...';
+  for (const [key, stop] of Object.entries(STOPS)) {
+    await fetchStop(stop);
+  }
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  document.getElementById('rt-updated').textContent =
+    `마지막 업데이트: ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+async function fetchStop(stop) {
+  const card = document.getElementById(stop.cardId);
+  const arriveEl = document.getElementById(stop.arriveId);
+  const nextEl = document.getElementById(stop.nextId);
+  card.classList.add('loading');
+
+  try {
+    const url = `https://apis.data.go.kr/6280000/busArrivalService/getBusArrivalList?serviceKey=${API_KEY}&bstopId=${stop.id}&numOfRows=20&pageNo=1&_type=json`;
+    const res = await fetch(url);
+    const json = await res.json();
+    const items = json?.response?.body?.items?.item;
+    if (!items) throw new Error('no data');
+
+    const list = Array.isArray(items) ? items : [items];
+    const buses = list.filter(i => String(i.routeno || '').includes(stop.route));
+
+    if (buses.length === 0) {
+      arriveEl.textContent = '운행 없음';
+      arriveEl.className = 'rt-arrive none';
+      nextEl.textContent = '';
+    } else {
+      const first = buses[0];
+      const min1 = Math.round((first.arrivaltime || 0) / 60);
+      arriveEl.textContent = min1 <= 0 ? '곧 도착' : `${min1}분`;
+      arriveEl.className = 'rt-arrive ' + (min1 <= 2 ? 'soon' : min1 <= 10 ? 'ok' : 'far');
+
+      if (buses.length > 1) {
+        const min2 = Math.round((buses[1].arrivaltime || 0) / 60);
+        nextEl.textContent = `다음 ${min2}분`;
+      } else {
+        nextEl.textContent = '';
+      }
+    }
+  } catch(e) {
+    arriveEl.textContent = '오류';
+    arriveEl.className = 'rt-arrive none';
+    nextEl.textContent = '잠시 후 다시 시도';
+  }
+  card.classList.remove('loading');
+}
+
+// ── 시간표 렌더 ────────────────────────────────────────
+function allSlots(day) {
+  const d = day;
+  return [
+    ...Object.entries(schedule.bus.chungna.morning[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라역 출발',type:'blue'}))),
+    ...Object.entries(schedule.bus.chungna.evening[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라역 출발',type:'orange'}))),
+    ...Object.entries(schedule.bus.gajeong.morning[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'가정역 출발',type:'green'}))),
+    ...Object.entries(schedule.arex.morning[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라국제도시역 출발',type:'purple'}))),
+    ...Object.entries(schedule.arex.evening[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라국제도시역 출발',type:'purple'}))),
+    ...Object.entries(schedule.arex.t2departure[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'인천공항T2 출발',type:'purple'}))),
+  ].sort((a,b)=>a.h*60+a.m-(b.h*60+b.m));
+}
+
+function findNextSlot() {
+  const nowMin = new Date().getHours()*60+new Date().getMinutes();
+  return allSlots(currentDay).find(s=>s.h*60+s.m>=nowMin);
+}
+
+function renderSection(containerId, data, type) {
+  const nowMin = new Date().getHours()*60+new Date().getMinutes();
+  const next = findNextSlot();
+  const nextAbsMin = next ? next.h*60+next.m : null;
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+
+  Object.entries(data).forEach(([hour, minutes]) => {
+    const row = document.createElement('div');
+    row.className = 'time-row';
+    const pillsId = `pills-${containerId}-${hour}`;
+    row.innerHTML = `<div class="hour">${hour}<span class="hour-label">시</span></div><div class="pills" id="${pillsId}"></div>`;
+    container.appendChild(row);
+    const pillContainer = document.getElementById(pillsId);
+    minutes.forEach(min => {
+      const pill = document.createElement('span');
+      pill.className = 'pill';
+      pill.textContent = String(min).padStart(2,'0')+'분';
+      const absMin = +hour*60+min;
+      if (absMin < nowMin) pill.classList.add('passed');
+      else if (nextAbsMin !== null && absMin === nextAbsMin && next.type === type) pill.classList.add(`next-${type}`);
+      pillContainer.appendChild(pill);
+    });
+  });
+}
+
+function render() {
+  const d = currentDay;
+  renderSection('chungna-morning', schedule.bus.chungna.morning[d], 'blue');
+  renderSection('chungna-evening', schedule.bus.chungna.evening[d], 'orange');
+  renderSection('gajeong-morning', schedule.bus.gajeong.morning[d], 'green');
+  renderSection('arex-morning',    schedule.arex.morning[d],        'purple');
+  renderSection('arex-evening',    schedule.arex.evening[d],        'purple');
+  renderSection('arex-t2',         schedule.arex.t2departure[d],    'purple');
+}
+
+function updateClock() {
+  const now = new Date();
+  const pad = n=>String(n).padStart(2,'0');
+  document.getElementById('clock').textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+// ── 초기화 ────────────────────────────────────────────
+setDay(autoDay());
+updateClock();
+fetchRealtime(); // 앱 시작시 바로 실시간 정보 로드
+setInterval(()=>{ updateClock(); render(); }, 30000);
+setInterval(fetchRealtime, 60000); // 1분마다 실시간 갱신
+</script>
+</body>
+</html>
