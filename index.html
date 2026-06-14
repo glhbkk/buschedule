@@ -222,10 +222,10 @@
 // ── 설정 ──────────────────────────────────────────────
 const API_KEY = '1ea48ee73f646fa9592a9e40e24ab4238c860c7cabbd9f831b72075dce4a188a';
 const STOPS = {
-  commute: { id: '89282', name: '청라초등학교', cardId: 'rt-card-commute', arriveId: 'rt-arrive-commute', nextId: 'rt-next-commute', route: '702' },
-  home:    { id: '89270', name: '청라국제도시역', cardId: 'rt-card-home',    arriveId: 'rt-arrive-home',    nextId: 'rt-next-home', route: '702' },
-  bus21:   { id: '89043', name: '청라국제도시역(서부산단)', cardId: 'rt-card-21', arriveId: 'rt-arrive-21', nextId: 'rt-next-21', route: '2-1' },
-  bus43:   { id: '89215', name: '청라국제도시역(청라국제교)', cardId: 'rt-card-43', arriveId: 'rt-arrive-43', nextId: 'rt-next-43', route: '43' }
+  commute: { id: '168000282', name: '청라초등학교', cardId: 'rt-card-commute', arriveId: 'rt-arrive-commute', nextId: 'rt-next-commute', route: '702', routeid: '165000499' },
+  home:    { id: '168000270', name: '청라국제도시역', cardId: 'rt-card-home',    arriveId: 'rt-arrive-home',    nextId: 'rt-next-home', route: '702', routeid: '165000499' },
+  bus21:   { id: '168000043', name: '청라국제도시역(서부산단)', cardId: 'rt-card-21', arriveId: 'rt-arrive-21', nextId: 'rt-next-21', route: '2-1', routeid: '165000132' },
+  bus43:   { id: '168000215', name: '청라국제도시역(청라국제교)', cardId: 'rt-card-43', arriveId: 'rt-arrive-43', nextId: 'rt-next-43', route: '43', routeid: '168000033' }
 };
 
 // ── 시간표 데이터 ──────────────────────────────────────
@@ -299,19 +299,22 @@ async function fetchStop(stop) {
   card.classList.add('loading');
 
   try {
-    const url = `https://bus-proxy.glhbkk.workers.dev/6280000/busArrivalService/getBusArrivalList?serviceKey=${API_KEY}&bstopId=${stop.id}&numOfRows=20&pageNo=1`;
+    const url = `https://bus-proxy.glhbkk.workers.dev/6280000/busArrivalService/getAllRouteBusArrivalList?serviceKey=${API_KEY}&bstopId=${stop.id}&numOfRows=20&pageNo=1`;
     const res = await fetch(url);
     const text = await res.text();
     const parser = new DOMParser();
     const xml = parser.parseFromString(text, 'text/xml');
-    const itemEls = xml.querySelectorAll('item');
+    const itemEls = xml.querySelectorAll('itemList');
     if (!itemEls.length) throw new Error('no data');
 
     const list = Array.from(itemEls).map(el => ({
-      routeno: el.querySelector('routeno')?.textContent || '',
-      arrivaltime: parseInt(el.querySelector('arrivaltime')?.textContent || '0')
+      routeid: el.querySelector('ROUTEID')?.textContent || '',
+      arrivaltime: parseInt(el.querySelector('ARRIVALESTIMATETIME')?.textContent || '0'),
+      reststop: el.querySelector('REST_STOP_COUNT')?.textContent || '-'
     }));
-    const buses = list.filter(i => i.routeno.includes(stop.route));
+    const buses = stop.routeid
+      ? list.filter(i => i.routeid === stop.routeid)
+      : list.filter(i => i.routeid);
 
     if (buses.length === 0) {
       arriveEl.textContent = '운행 없음';
@@ -325,9 +328,9 @@ async function fetchStop(stop) {
 
       if (buses.length > 1) {
         const min2 = Math.round((buses[1].arrivaltime || 0) / 60);
-        nextEl.textContent = `다음 ${min2}분`;
+        nextEl.textContent = `다음 ${min2}분 (${buses[1].reststop}정거장 전)`;
       } else {
-        nextEl.textContent = '';
+        nextEl.textContent = `${first.reststop}정거장 전`;
       }
     }
   } catch(e) {
