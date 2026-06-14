@@ -299,7 +299,7 @@ async function fetchStop(stop) {
   card.classList.add('loading');
 
   try {
-    const url = `https://apis.data.go.kr/6280000/busArrivalService/getBusArrivalList?serviceKey=${API_KEY}&bstopId=${stop.id}&numOfRows=20&pageNo=1&_type=json`;
+    const url = `https://bus-proxy.glhbkk.workers.dev/6280000/busArrivalService/getBusArrivalList?serviceKey=${API_KEY}&bstopId=${stop.id}&numOfRows=20&pageNo=1&_type=json`;
     const res = await fetch(url);
     const json = await res.json();
     const items = json?.response?.body?.items?.item;
