@@ -109,32 +109,69 @@
   <h1>내 대중교통 시간표</h1>
 </div>
 
-<div class="day-toggle">
-  <button class="day-btn" id="btn-weekday" onclick="setDay('weekday')">평일</button>
-  <button class="day-btn" id="btn-weekend" onclick="setDay('weekend')">토·공휴일</button>
-</div>
-
 <!-- 실시간 도착정보 -->
 <div class="realtime-wrap">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
     <span class="realtime-title">🔴 실시간 버스 도착정보</span>
     <button class="refresh-btn" onclick="fetchRealtime()" title="새로고침">↻</button>
   </div>
-  <div class="realtime-cards">
+
+  <!-- 출근/퇴근 탭 -->
+  <div style="display:flex;gap:6px;margin-bottom:12px;">
+    <button class="day-btn active" id="btn-commute" onclick="setRtTab('commute')">출근</button>
+    <button class="day-btn" id="btn-home" onclick="setRtTab('home')">퇴근</button>
+  </div>
+
+  <!-- 출근 카드 -->
+  <div id="rt-panel-commute" class="realtime-cards">
     <div class="rt-card loading" id="rt-card-commute">
       <div class="rt-left">
         <span class="rt-stop">청라초등학교</span>
-        <span class="rt-route">702번 (출근)</span>
+        <span class="rt-route">702번 (출근) · 약 20분 소요</span>
       </div>
       <div class="rt-right">
         <span class="rt-arrive ok" id="rt-arrive-commute">불러오는 중...</span>
         <span class="rt-next" id="rt-next-commute"></span>
       </div>
     </div>
+    <div class="rt-card loading" id="rt-card-welcounty">
+      <div class="rt-left">
+        <span class="rt-stop">웰카운티1차</span>
+        <span class="rt-route">2-1번 (출근) · 약 15분 소요</span>
+      </div>
+      <div class="rt-right">
+        <span class="rt-arrive ok" id="rt-arrive-welcounty">불러오는 중...</span>
+        <span class="rt-next" id="rt-next-welcounty"></span>
+      </div>
+    </div>
+    <div class="rt-card loading" id="rt-card-hoban">
+      <div class="rt-left">
+        <span class="rt-stop">호반베르디움</span>
+        <span class="rt-route">43번 (출근) · 약 23분 소요</span>
+      </div>
+      <div class="rt-right">
+        <span class="rt-arrive ok" id="rt-arrive-hoban">불러오는 중...</span>
+        <span class="rt-next" id="rt-next-hoban"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 퇴근 카드 -->
+  <div id="rt-panel-home" class="realtime-cards" style="display:none;">
+    <div class="rt-card" id="rt-card-702home">
+      <div class="rt-left">
+        <span class="rt-stop">청라역</span>
+        <span class="rt-route">702번 (퇴근) · 시간표 기준</span>
+      </div>
+      <div class="rt-right">
+        <span class="rt-arrive ok" id="rt-arrive-702home">--</span>
+        <span class="rt-next" id="rt-next-702home"></span>
+      </div>
+    </div>
     <div class="rt-card loading" id="rt-card-21">
       <div class="rt-left">
         <span class="rt-stop">청라국제도시역(서부산단)</span>
-        <span class="rt-route">2-1번</span>
+        <span class="rt-route">2-1번 (퇴근) · 약 18분 소요</span>
       </div>
       <div class="rt-right">
         <span class="rt-arrive ok" id="rt-arrive-21">불러오는 중...</span>
@@ -144,7 +181,7 @@
     <div class="rt-card loading" id="rt-card-43">
       <div class="rt-left">
         <span class="rt-stop">청라국제도시역(청라국제교)</span>
-        <span class="rt-route">43번</span>
+        <span class="rt-route">43번 (퇴근) · 약 20분 소요</span>
       </div>
       <div class="rt-right">
         <span class="rt-arrive ok" id="rt-arrive-43">불러오는 중...</span>
@@ -152,18 +189,25 @@
       </div>
     </div>
   </div>
+
   <div class="rt-refresh" id="rt-updated"></div>
+</div>
+
+<!-- 평일/공휴일 버튼 -->
+<div class="day-toggle">
+  <button class="day-btn day-btn-schedule active" data-day="weekday" onclick="setDay('weekday')">평일</button>
+  <button class="day-btn day-btn-schedule" data-day="weekend" onclick="setDay('weekend')">토·공휴일</button>
 </div>
 
 
 
 <div class="tab-bar">
-  <button class="tab-btn active" onclick="setTab('rail')">🚆 공항철도</button>
-  <button class="tab-btn" onclick="setTab('bus')">🚌 버스</button>
+  <button class="tab-btn active" onclick="setTab('bus')">🚌 버스</button>
+  <button class="tab-btn" onclick="setTab('rail')">🚆 공항철도</button>
 </div>
 
-<!-- 공항철도 탭 -->
-<div class="tab-panel active" id="tab-rail">
+<!-- 공항철도 탭 (두번째) -->
+<div class="tab-panel" id="tab-rail">
   <div class="section">
     <div class="section-header">
       <div class="section-dot dot-purple"></div>
@@ -184,8 +228,8 @@
   </div>
 </div>
 
-<!-- 버스 탭 -->
-<div class="tab-panel" id="tab-bus">
+<!-- 버스 탭 (첫번째, active) -->
+<div class="tab-panel active" id="tab-bus">
   <div class="section">
     <div class="section-header">
       <div class="section-dot dot-orange"></div>
@@ -213,6 +257,8 @@
 const API_KEY = '1ea48ee73f646fa9592a9e40e24ab4238c860c7cabbd9f831b72075dce4a188a';
 const STOPS = {
   commute: { id: '168001282', name: '청라초등학교', cardId: 'rt-card-commute', arriveId: 'rt-arrive-commute', nextId: 'rt-next-commute', route: '702', routeid: '165000499' },
+  welcounty: { id: '168000764', name: '웰카운티1차', cardId: 'rt-card-welcounty', arriveId: 'rt-arrive-welcounty', nextId: 'rt-next-welcounty', route: '2-1', routeid: '165000238' },
+  hoban: { id: '168000855', name: '호반베르디움', cardId: 'rt-card-hoban', arriveId: 'rt-arrive-hoban', nextId: 'rt-next-hoban', route: '43', routeid: '165000441' },
   bus21:   { id: '168001043', name: '청라국제도시역(서부산단)', cardId: 'rt-card-21', arriveId: 'rt-arrive-21', nextId: 'rt-next-21', route: '2-1', routeid: '165000238' },
   bus43:   { id: '168001215', name: '청라국제도시역(청라국제교)', cardId: 'rt-card-43', arriveId: 'rt-arrive-43', nextId: 'rt-next-43', route: '43', routeid: '165000441' }
 };
@@ -245,19 +291,31 @@ const schedule = {
 };
 
 let currentDay = 'weekday';
-let currentTab = 'rail';
+let currentTab = 'bus';
+let currentRtTab = 'commute';
 
 function setDay(day) {
   currentDay = day;
-  document.getElementById('btn-weekday').classList.toggle('active', day==='weekday');
-  document.getElementById('btn-weekend').classList.toggle('active', day==='weekend');
+  document.querySelectorAll('.day-btn-schedule').forEach(b => {
+    b.classList.toggle('active', b.dataset.day === day);
+  });
+  update702HomeCard();
+  sortCards();
   render();
+}
+
+function setRtTab(tab) {
+  currentRtTab = tab;
+  document.getElementById('btn-commute').classList.toggle('active', tab==='commute');
+  document.getElementById('btn-home').classList.toggle('active', tab==='home');
+  document.getElementById('rt-panel-commute').style.display = tab==='commute' ? 'flex' : 'none';
+  document.getElementById('rt-panel-home').style.display = tab==='home' ? 'flex' : 'none';
 }
 
 function setTab(tab) {
   currentTab = tab;
   document.querySelectorAll('.tab-btn').forEach((b,i)=>{
-    b.classList.toggle('active', ['rail','bus'][i]===tab);
+    b.classList.toggle('active', ['bus','rail'][i]===tab);
   });
   document.getElementById('tab-rail').classList.toggle('active', tab==='rail');
   document.getElementById('tab-bus').classList.toggle('active', tab==='bus');
@@ -270,15 +328,69 @@ function autoDay() {
 }
 
 // ── 실시간 API ─────────────────────────────────────────
+const arrivalTimes = {}; // cardId → 도착시간(초) 저장
+
 async function fetchRealtime() {
   document.getElementById('rt-updated').textContent = '불러오는 중...';
-  for (const [key, stop] of Object.entries(STOPS)) {
-    await fetchStop(stop);
-  }
+  update702HomeCard();
+  await Promise.all(Object.values(STOPS).map(stop => fetchStop(stop)));
+  sortCards();
   const now = new Date();
   const pad = n => String(n).padStart(2,'0');
   document.getElementById('rt-updated').textContent =
     `마지막 업데이트: ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+
+function update702HomeCard() {
+  const now = new Date();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const day = currentDay;
+  const slots = [
+    ...Object.entries(schedule.bus.chungna.morning[day]).flatMap(([h,ms])=>ms.map(m=>+h*60+m)),
+    ...Object.entries(schedule.bus.chungna.evening[day]).flatMap(([h,ms])=>ms.map(m=>+h*60+m)),
+  ].sort((a,b)=>a-b);
+
+  const next = slots.find(s => s >= nowMin);
+  const arriveEl = document.getElementById('rt-arrive-702home');
+  const nextEl = document.getElementById('rt-next-702home');
+
+  if (!next) {
+    arriveEl.textContent = '오늘 종료';
+    arriveEl.className = 'rt-arrive none';
+    nextEl.textContent = '';
+    arrivalTimes['rt-card-702home'] = Infinity;
+    return;
+  }
+
+  const diff = next - nowMin;
+  arriveEl.textContent = diff === 0 ? '지금' : `${diff}분`;
+  arriveEl.className = 'rt-arrive ' + (diff <= 2 ? 'soon' : diff <= 10 ? 'ok' : 'far');
+
+  const h = Math.floor(next/60);
+  const m = String(next%60).padStart(2,'0');
+  nextEl.textContent = `${h}:${m} 출발`;
+
+  const nextAfter = slots.find(s => s > next);
+  if (nextAfter) {
+    const h2 = Math.floor(nextAfter/60);
+    const m2 = String(nextAfter%60).padStart(2,'0');
+    nextEl.textContent = `${h}:${m} 출발 · 다음 ${h2}:${m2}`;
+  }
+  arrivalTimes['rt-card-702home'] = diff * 60;
+}
+
+function sortCards() {
+  ['rt-panel-commute', 'rt-panel-home'].forEach(panelId => {
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    const cards = Array.from(panel.querySelectorAll('.rt-card'));
+    cards.sort((a, b) => {
+      const ta = arrivalTimes[a.id] ?? Infinity;
+      const tb = arrivalTimes[b.id] ?? Infinity;
+      return ta - tb;
+    });
+    cards.forEach(card => panel.appendChild(card));
+  });
 }
 
 async function fetchStop(stop) {
@@ -306,11 +418,13 @@ async function fetchStop(stop) {
       : list.filter(i => i.routeid);
 
     if (buses.length === 0) {
+      arrivalTimes[stop.cardId] = Infinity;
       arriveEl.textContent = '운행 없음';
       arriveEl.className = 'rt-arrive none';
       nextEl.textContent = '';
     } else {
       const first = buses[0];
+      arrivalTimes[stop.cardId] = first.arrivaltime;
       const min1 = Math.round((first.arrivaltime || 0) / 60);
       arriveEl.textContent = min1 <= 0 ? '곧 도착' : `${min1}분`;
       arriveEl.className = 'rt-arrive ' + (min1 <= 2 ? 'soon' : min1 <= 10 ? 'ok' : 'far');
@@ -323,6 +437,7 @@ async function fetchStop(stop) {
       }
     }
   } catch(e) {
+    arrivalTimes[stop.cardId] = Infinity;
     arriveEl.textContent = '오류';
     arriveEl.className = 'rt-arrive none';
     nextEl.textContent = '잠시 후 다시 시도';
@@ -393,9 +508,9 @@ function updateClock() {
 // ── 초기화 ────────────────────────────────────────────
 setDay(autoDay());
 updateClock();
-fetchRealtime(); // 앱 시작시 바로 실시간 정보 로드
-setInterval(()=>{ updateClock(); render(); }, 30000);
-setInterval(fetchRealtime, 60000); // 1분마다 실시간 갱신
+fetchRealtime();
+setInterval(()=>{ updateClock(); update702HomeCard(); sortCards(); render(); }, 30000);
+setInterval(fetchRealtime, 60000);
 </script>
 </body>
 </html>
