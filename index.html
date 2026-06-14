@@ -160,7 +160,7 @@
   <div id="rt-panel-home" class="realtime-cards" style="display:none;">
     <div class="rt-card" id="rt-card-702home">
       <div class="rt-left">
-        <span class="rt-stop">청라역</span>
+        <span class="rt-stop">청라국제도시역</span>
         <span class="rt-route">702번 (퇴근) · 시간표 기준</span>
       </div>
       <div class="rt-right">
@@ -233,7 +233,7 @@
   <div class="section">
     <div class="section-header">
       <div class="section-dot dot-orange"></div>
-      <span class="section-title">청라역 출발 <span style="font-size:12px;color:var(--accent-orange);font-weight:400;">(퇴근)</span></span>
+      <span class="section-title">청라국제도시역 출발 <span style="font-size:12px;color:var(--accent-orange);font-weight:400;">(퇴근)</span></span>
       <span class="section-sub">저녁 18·19시</span>
     </div>
     <div id="chungna-morning"></div>
@@ -320,6 +320,17 @@ function setTab(tab) {
   document.getElementById('tab-rail').classList.toggle('active', tab==='rail');
   document.getElementById('tab-bus').classList.toggle('active', tab==='bus');
   render();
+}
+
+function autoRtTab() {
+  const now = new Date();
+  const t = now.getHours() * 60 + now.getMinutes();
+  const toMin = (h, m) => h * 60 + m;
+  if (t >= toMin(7,0)  && t < toMin(8,30))  return 'commute';
+  if (t >= toMin(8,45) && t < toMin(11,0))  return 'home';
+  if (t >= toMin(15,0) && t < toMin(17,30)) return 'commute';
+  if (t >= toMin(17,45)&& t < toMin(20,0))  return 'home';
+  return 'commute';
 }
 
 function autoDay() {
@@ -449,8 +460,8 @@ async function fetchStop(stop) {
 function allSlots(day) {
   const d = day;
   return [
-    ...Object.entries(schedule.bus.chungna.morning[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라역 출발',type:'blue'}))),
-    ...Object.entries(schedule.bus.chungna.evening[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라역 출발',type:'orange'}))),
+    ...Object.entries(schedule.bus.chungna.morning[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라국제도시역 출발',type:'blue'}))),
+    ...Object.entries(schedule.bus.chungna.evening[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라국제도시역 출발',type:'orange'}))),
     ...Object.entries(schedule.bus.gajeong.morning[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'가정역 출발',type:'green'}))),
     ...Object.entries(schedule.arex.morning[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라국제도시역 출발',type:'purple'}))),
     ...Object.entries(schedule.arex.evening[d]).flatMap(([h,ms])=>ms.map(m=>({h:+h,m,label:'청라국제도시역 출발',type:'purple'}))),
@@ -507,6 +518,7 @@ function updateClock() {
 
 // ── 초기화 ────────────────────────────────────────────
 setDay(autoDay());
+setRtTab(autoRtTab());
 updateClock();
 fetchRealtime();
 setInterval(()=>{ updateClock(); update702HomeCard(); sortCards(); render(); }, 30000);
