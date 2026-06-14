@@ -299,14 +299,19 @@ async function fetchStop(stop) {
   card.classList.add('loading');
 
   try {
-    const url = `https://bus-proxy.glhbkk.workers.dev/6280000/busArrivalService/getBusArrivalList?serviceKey=${API_KEY}&bstopId=${stop.id}&numOfRows=20&pageNo=1&_type=json`;
+    const url = `https://bus-proxy.glhbkk.workers.dev/6280000/busArrivalService/getBusArrivalList?serviceKey=${API_KEY}&bstopId=${stop.id}&numOfRows=20&pageNo=1`;
     const res = await fetch(url);
-    const json = await res.json();
-    const items = json?.response?.body?.items?.item;
-    if (!items) throw new Error('no data');
+    const text = await res.text();
+    const parser = new DOMParser();
+    const xml = parser.parseFromString(text, 'text/xml');
+    const itemEls = xml.querySelectorAll('item');
+    if (!itemEls.length) throw new Error('no data');
 
-    const list = Array.isArray(items) ? items : [items];
-    const buses = list.filter(i => String(i.routeno || '').includes(stop.route));
+    const list = Array.from(itemEls).map(el => ({
+      routeno: el.querySelector('routeno')?.textContent || '',
+      arrivaltime: parseInt(el.querySelector('arrivaltime')?.textContent || '0')
+    }));
+    const buses = list.filter(i => i.routeno.includes(stop.route));
 
     if (buses.length === 0) {
       arriveEl.textContent = '운행 없음';
