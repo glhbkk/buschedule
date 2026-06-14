@@ -131,16 +131,6 @@
         <span class="rt-next" id="rt-next-commute"></span>
       </div>
     </div>
-    <div class="rt-card loading" id="rt-card-home">
-      <div class="rt-left">
-        <span class="rt-stop">청라국제도시역</span>
-        <span class="rt-route">702번 (퇴근)</span>
-      </div>
-      <div class="rt-right">
-        <span class="rt-arrive ok" id="rt-arrive-home">불러오는 중...</span>
-        <span class="rt-next" id="rt-next-home"></span>
-      </div>
-    </div>
     <div class="rt-card loading" id="rt-card-21">
       <div class="rt-left">
         <span class="rt-stop">청라국제도시역(서부산단)</span>
@@ -222,10 +212,9 @@
 // ── 설정 ──────────────────────────────────────────────
 const API_KEY = '1ea48ee73f646fa9592a9e40e24ab4238c860c7cabbd9f831b72075dce4a188a';
 const STOPS = {
-  commute: { id: '168000282', name: '청라초등학교', cardId: 'rt-card-commute', arriveId: 'rt-arrive-commute', nextId: 'rt-next-commute', route: '702', routeid: '165000499' },
-  home:    { id: '168000270', name: '청라국제도시역', cardId: 'rt-card-home',    arriveId: 'rt-arrive-home',    nextId: 'rt-next-home', route: '702', routeid: '165000499' },
-  bus21:   { id: '168000043', name: '청라국제도시역(서부산단)', cardId: 'rt-card-21', arriveId: 'rt-arrive-21', nextId: 'rt-next-21', route: '2-1', routeid: '165000132' },
-  bus43:   { id: '168000215', name: '청라국제도시역(청라국제교)', cardId: 'rt-card-43', arriveId: 'rt-arrive-43', nextId: 'rt-next-43', route: '43', routeid: '168000033' }
+  commute: { id: '168001282', name: '청라초등학교', cardId: 'rt-card-commute', arriveId: 'rt-arrive-commute', nextId: 'rt-next-commute', route: '702', routeid: '165000499' },
+  bus21:   { id: '168000043', name: '청라국제도시역(서부산단)', cardId: 'rt-card-21', arriveId: 'rt-arrive-21', nextId: 'rt-next-21', route: '2-1', routeid: '165000238' },
+  bus43:   { id: '168000215', name: '청라국제도시역(청라국제교)', cardId: 'rt-card-43', arriveId: 'rt-arrive-43', nextId: 'rt-next-43', route: '43', routeid: '165000441' }
 };
 
 // ── 시간표 데이터 ──────────────────────────────────────
